@@ -25,6 +25,14 @@ library(ggstatsplot)
  
 # assign each file its condition prior to merging them in one. Nice loop would be handy here.
 
+ ctrl_ns, hgSg_fs
+ 
+$condition = "ctrl_ns"
+$condition = "ctrl_ns"
+$condition = "hgSg_fs"
+$condition = "ctrl_ns"
+
+ 
 #merge all 12
 complete = rbind(phen1108_B2_R12,phen1808_B1_R1,phen2308_B1_R4)
 complete$symetry = ifelse(str_detect(complete$id, "R"), print("R"), print("L"))
@@ -126,6 +134,8 @@ ggbetweenstats(
 ```
 
 ```{r 5 -> Regressions: average differences between groups, echo=FALSE}
+
+
 ```
 
 ```{r 6 -> Regressions: flight vs. symetry/size/shape , echo=FALSE}
