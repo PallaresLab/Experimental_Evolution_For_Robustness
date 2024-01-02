@@ -71,7 +71,7 @@ length(unique(NEX_wings$pair))
 dim(NEX_wings)
 cord <- as.matrix(NEX_wings[,2:31])
 shape <- arrayspecs(cord, 15, 2)
-#shape_fix = estimate.missing(shape)
+#shape_fix = estimate.missing(shape) 
 ```
 
 ```{r 3 -> Geomorph analysis: PCA, echo=FALSE}
@@ -232,4 +232,17 @@ shape.space(wing.pca, group = wing.pca$flight, color = wes_palette("BottleRocket
 
 ```
 
+```{r 8 -> Object summary, include=FALSE}
+''' Quick summary of ojects produced throughtout analysis. Internal directory, mostly for organizing purposes:
+
+    -> 1. Read files: stucture G0RX
+    -> 2. File imported to Morphoj for checks on swapped landmarks: complete.Rmd -> "NEX_morphometrics_Go.txt" -> NEX_wings.Rmd
+    -> 3. Geomorph ojects: myGPA [generic PCA], bs [bilaterial symetry viz], bs_control and bs_hs [DA/FA seperated by condition]
+    -> 4. Integration with flight data: complete_integr [step 1], 
+                                        AI_NEX [step 2 - flight vs symetry -> subset of flies with 2 wings]
+                                        NEX_wings_as_average [step 3 - flight vs wing shape -> average wings]
+                                        NEX_crossveinless [integration of flight and corssveinless phenotypes]
+    -> 5.
+
+```
 
