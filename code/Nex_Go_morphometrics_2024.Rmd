@@ -65,12 +65,10 @@ NEX_wings$symetry = ifelse(str_detect(NEX_wings$id, "R"), print("R"), print("L")
 NEX_wings$ind = str_split_i(NEX_wings$id, "_",3)
 NEX_wings$diet = str_split_i(NEX_wings$id, "_",1)
 NEX_wings$condition = paste(NEX_wings$diet ,str_split_i(NEX_wings$id, "_",2), sep = "_")
-
 NEX_wings$pair = stringr::str_extract(NEX_wings$ind, "^.{3}")
 #NEX_wings$pair = paste(NEX_wings$condition, NEX_wings$pair, sep = "_")
 length(unique(NEX_wings$pair))
 dim(NEX_wings)
-
 cord <- as.matrix(NEX_wings[,2:31])
 shape <- arrayspecs(cord, 15, 2)
 #shape_fix = estimate.missing(shape)
@@ -85,34 +83,26 @@ myGPA$condition = NEX_wings$condition
 myGPA$ids = NEX_wings$id
 myGPA$symetry = NEX_wings$symetry
 myGPA$pairs = NEX_wings$pair
-NEX_wings$condition=  ifelse(NEX_wings$condition == "ctrl_ns", paste("Control diet + no selection"), NEX_wings$condition )
-NEX_wings$condition=  ifelse(NEX_wings$condition == "ctrl_fs", paste("Control diet + flight selection"), NEX_wings$condition )
-NEX_wings$condition=  ifelse(NEX_wings$condition == "hgSg_ns", paste("High Sugar diet + no selection"), NEX_wings$condition )
-NEX_wings$condition=  ifelse(NEX_wings$condition == "hgSg_fs", paste("High Sugar diet + flight selection"), NEX_wings$condition )
-myGPA$Cond_full = NEX_wings$condition
-
+NEX_wings$condition=ifelse(NEX_wings$condition == "ctrl_ns", paste("Control diet"), NEX_wings$condition )
+NEX_wings$condition=ifelse(NEX_wings$condition == "ctrl_fs", paste("Control diet"), NEX_wings$condition )
+NEX_wings$condition=ifelse(NEX_wings$condition == "hgSg_ns", paste("High Sugar diet"), NEX_wings$condition )
+NEX_wings$condition=ifelse(NEX_wings$condition == "hgSg_fs", paste("High Sugar diet"), NEX_wings$condition )
 #perform generic PCA
 wing.pca <- gm.prcomp(shapes_aligned$coords)
 wing.pca$condition = NEX_wings$condition
 plot(wing.pca, col = as.factor(NEX_wings$condition))
-ggGMMplot(wing.pca, group = NEX_wings$condition, 
-          group.title = 'Condition', 
-          convex.hulls = TRUE, include.legend = TRUE, label.groups = F)
+ggGMMplot(wing.pca, group = NEX_wings$condition, group.title = 'Condition', convex.hulls = TRUE,include.legend = TRUE, label.groups = F)
 m = mshape(shapes_aligned$coords)
-shape.space(wing.pca, group = NEX_wings$condition, 
-            group.title = 'Condition', convex.hulls = T,
-            backtransform.examples = TRUE,
-            ref.shape = m,
-            shape.method = "points",
-            bt.shape.mag = 4,
-            bt.links = fw.links,pt.size = 1, label.groups = F)
+shape.space(wing.pca, group = NEX_wings$condition, group.title = 'Condition', convex.hulls = T,
+            backtransform.examples = TRUE,ref.shape = m, shape.method = "points",
+            bt.shape.mag = 4,bt.links = fw.links,pt.size = 1, label.groups = F)
 
 ```
 
 ```{r 4 -> Symetry analysis, echo=FALSE}
 bs = bilat.symmetry(shapes_aligned$coords, ind = shapes_aligned$pairs, side =  shapes_aligned$symetry) #check if object.sym=T is required, my understanding is that its only necessery for radially symetrical images, or if two wings were present in the same file.
 
-#extract and plot sizes
+#4.1 - extract and plot sizes
 sizes_per_group = as.data.frame(myGPA$Csize, myGPA$Cond_full)
 sizes_per_group$Cond_full  = rownames(sizes_per_group)
 sizes_per_group$size = sizes_per_group$`myGPA$Csize`
@@ -124,7 +114,7 @@ ggbetweenstats(
   y     = logsize,
   title = "Wing size distribution per group", pairwise.display = "significant", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups",results.subtitle = FALSE, ylab = "Log 10 -Wing Centrod Size", palette = "Accent")
 
-#extract and plot asymetry index
+#4.2 - extract and plot asymetry index
 symetry_per_group = as.data.frame(bs$signed.AI, bs$condition)
 symetry_per_group$CONDITION  = rownames(symetry_per_group)
 symetry_per_group$CONDITION = stringr::str_extract(symetry_per_group$CONDITION, "^.{10}")
@@ -140,15 +130,39 @@ ggbetweenstats(
   x     = CONDITION,
   y     = AI,
   title = "Wing symetry index distribution per group", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups", ylab = "Symetry Index",results.subtitle = FALSE, palette = "Accent")
+
+#4.3 - seperate FA and DA in four groups (two groups in Go)
+#Geomorph calculates FA/DA for the whole object, thus myGPA needs to be subset in two objects and symetry checked again. 
+
+coords.control <- shapes_aligned$coords[ , , shapes_aligned$condition == "Control food"]
+Csize.control <- shapes_aligned$size[shapes_aligned$condition == "Control food" ]
+ids <- shapes_aligned$species[shapes_aligned$id == "Control food"]
+gpa_control <- geomorph.data.frame(coords = coords.control, Csize = Csize.control, ids = ids)
+
+coords.hs <- shapes_aligned$coords[ , , shapes_aligned$condition != "Control food"]
+Csize.hs <- shapes_aligned$size[shapes_aligned$condition != "Control food" ]
+ids <- shapes_aligned$species[shapes_aligned$id != "Control food"]
+gpa_hs <- geomorph.data.frame(coords = coords.hs, Csize = Csize.hs, ids = ids)
+
+bs_control = bilat.symmetry(coords.control$coords, ind = coords.control$pairs, side =  coords.control$symetry)
+bs_hs = bilat.symmetry(coords.hs$coords, ind = coords.hs$pairs, side =  coords.hs$symetry) 
+#two functions above automatically produce plots, save with concrete names to avoid confusion
 ```
 
 ```{r 5 -> Regressions: average differences between groups, echo=FALSE}
+#We can test differences between groups using Procrustes coordinates or PC scores.
 
+#First - using coordinates
 
+#Second - using pcs (not recommended)
+pc.scores<-plotTangentSpace(myGPA$coords, warpgrids=F)
+myGPA_DF<-geomorph.data.frame(myGPA, pcscores=pc.scores$pc.scores)
+w <- lm(myGPA_DF$pcscores[,1]~ log(myGPA_DF$size))
+summary(w)
 ```
 
 ```{r 6 -> Regressions: flight vs. symetry/size/shape , echo=FALSE}
-#To integrate flight analysis with the dataset, we need to import all assigned ID values ordered by Y-axis as well as individual flight values in cm-s. We first merge these two datasets and then overlap that dataframe with the wing coordinates based on the 'ID' colomn
+# 6.1 - To integrate flight analysis with the dataset, we need to import all assigned ID values ordered by Y-axis as well as individual flight values in cm-s. We first merge these two datasets and then overlap that dataframe with the wing coordinates based on the 'ID' colomn
 
 #currently each replica has its own flight csv, ID txt files. Merging them to avoid extra code can be a good idea, otherwise loop-ing the read function.
 
@@ -172,7 +186,50 @@ complete_integr = rbind(G0R1_integrated,G0R2_integrated,G0R3_integrated,G0R4_int
 ggscatter(complete_integr, x = "size", y = "Y", add = "reg.line", conf.int = TRUE,cor.coef = TRUE, cor.method = "pearson")
 #subset high-sugar and control data seperately to test if correlation exists.
 
+# 6.2 - Next step in regression analysis is to generate 'average' wings for each ID. For one individual, we need to have a flight score + L/R wing average. In case if there is only one wing per individual (e.g. left wing avail, while right was damaged or missing), we will keep information from the only available wing.
+#we generate an object named AI_NEX by first seperate single/double wing individuals.
+...
+AI_NEX$pair =str_split_i(rownames(AI_NEX), "ind",2)
+AI_NEX$ai = AI_NEX$`bs$signed.AI`
+dim(AI_NEX)
+#next we nerge AI_NEX with flight data (complete_integr)
+AI_NEX_merges = merge(complete_integr, AI_NEX, by.y  = "pair",) #here we use ids to merge
+dim(complete_integr)
+dim(AI_NEX_merges)
+AI_NEX_merges_na = na.omit(AI_NEX_merges)
+ggscatter(AI_NEX_merges_na, x = "ai", y = "Y", add = "reg.line", conf.int = TRUE,cor.coef = TRUE, cor.method = "pearson")
+
+#the last correlations I need to have is for the flight scores!
+#now I just need to make a GPA object and go with analysis
+AI_NEX_merges_na
+cord = as.matrix(AI_NEX_merges_na[,11:40])
+shape <- arrayspecs(cord, 15, 2)
+nex_mph <- geomorph.data.frame(shape = shape, size = AI_NEX_merges_na$size, id =AI_NEX_merges_na$pair, condition = AI_NEX_merges_na$condition,
+                               flight = AI_NEX_merges_na$Y)
+wing.pca <- gm.prcomp(shape)
+wing.pca$condition = AI_NEX_merges_na$condition
+wing.pca$flight = nex_mph$flight
+
+shape.space(wing.pca, group = wing.pca$flight, color = wes_palette("BottleRocket1", type = "continuous"),
+            group.title = 'Condition', convex.hulls = F,
+            backtransform.examples = TRUE,
+            ref.shape = mshape(shape_fx),
+            shape.method = "points",
+            bt.shape.mag = 4, hull.alpha = 0.1,ref.pt.size = 0.5, target.pt.size = 0.5, lm.labels = F,
+            bt.links = fw.links,pt.size = 1, label.groups = F)
 
 
 ```
+
+```{r 7 -> Crossveinless vs flight}
+#step 1 - import files with the annotation of cross veins (IDs) per each folder.
+#overlap with flight and morphometrics data.
+#enrichment analysis for selection/no selection zones.
+
+#Side note: this analysis becomes important only in the context of selection results, can be ignored for now.
+
+#step 2 - check if crossveinless mark (landmark 10) has a strong impact on overall shape of PCA, and variance in wings.
+
+```
+
 
