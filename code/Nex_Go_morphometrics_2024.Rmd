@@ -77,6 +77,7 @@ shape <- arrayspecs(cord, 15, 2)
 ```{r 3 -> Geomorph analysis: PCA, echo=FALSE}
 myGPA<-gpagen(shape) #first we perform gpa, then we rotate.
 shapes_aligned <- align.reflect(myGPA, top.pt = 7, links = fw.links,provenance = NULL )
+myGPA <- align.procrustes(shapes_aligned, outlier.analysis = TRUE) # helps to remove outliers
 
 #clearly assign metadata
 myGPA$condition = NEX_wings$condition
@@ -130,6 +131,9 @@ ggbetweenstats(
   x     = CONDITION,
   y     = AI,
   title = "Wing symetry index distribution per group", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups", ylab = "Symetry Index",results.subtitle = FALSE, palette = "Accent")
+# Geomorph produces AI in two forms: signed and unsigned.
+#Signed represents 
+
 
 #4.3 - seperate FA and DA in four groups (two groups in Go)
 #Geomorph calculates FA/DA for the whole object, thus myGPA needs to be subset in two objects based on condition and symetry checked again.
@@ -192,7 +196,37 @@ ggscatter(complete_integr, x = "size", y = "Y", add = "reg.line", conf.int = TRU
 
 # 6.2 - Next step in regression analysis is to generate 'average' wings for each ID. For one individual, we need to have a flight score + L/R wing average. In case if there is only one wing per individual (e.g. left wing avail, while right was damaged or missing), we will keep information from the only available wing.
 #we generate an object named AI_NEX by first seperate single/double wing individuals.
-...
+df = as.matrix(two.d.array(shapes_aligned$coords))
+df = as.data.frame(df)
+df$pair = myGPA$pairs
+df$size = myGPA$Csize
+NEX_wings_sm = df[duplicated(df$pair) | duplicated(df$pair, fromLast=TRUE), ]
+NEX_wings_as = df[!df$pair %in% NEX_wings_sm$pair,]
+dim(NEX_wings)
+dim(NEX_wings_sm)
+dim(NEX_wings_as)
+NEX_wings_as_average <- aggregate(NEX_wings_sm, by=NEX_wings_sm["pair"], mean )
+
+# One can further check is size differences between right an lest correlate with the flight:
+minus <- function(x) {x[1] - x[2]} # I used this to find difference in right versus left
+NEX_wings_as_average <- aggregate(NEX_wings_sm$size, by=NEX_wings_sm["pair"], minus )
+dim(Nex_wings_AV)
+
+# this needs to be assigned separately because main obejcts has a different order individuals.
+Nex_wings_AV$condition = stringr::str_extract(Nex_wings_AV$pair, "^.{7}")
+Nex_wings_AV$logsize=  log10(Nex_wings_AV$size)
+Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "ctrl_ns", paste("Control diet + no selection"), Nex_wings_AV$condition )
+Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "ctrl_fs", paste("Control diet + flight selection"), Nex_wings_AV$condition )
+Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "hgSg_ns", paste("High Sugar diet + no selection"), Nex_wings_AV$condition )
+Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "hgSg_fs", paste("High Sugar diet + flight selection"), Nex_wings_AV$condition )
+ggbetweenstats(
+  data  = Nex_wings_AV,
+  x     = condition,
+  y     = logsize,
+  title = "Wing size distribution per group", pairwise.display = "significant", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups",results.subtitle = FALSE, ylab = "Log 10 -Wing Centrod Size", palette = "Accent")
+
+
+# 6.3 - Once we checked if the shape of avareage wing per individual correlated with flight, we need to further test if symetry also correlates with flight. To go ahead, we first subset data that always have two wings per individual
 AI_NEX$pair =str_split_i(rownames(AI_NEX), "ind",2)
 AI_NEX$ai = AI_NEX$`bs$signed.AI`
 dim(AI_NEX)
@@ -244,7 +278,8 @@ shape.space(wing.pca, group = wing.pca$flight, color = wes_palette("BottleRocket
     -> 3. Geomorph ojects: myGPA [generic PCA], bs [bilaterial symetry viz], bs_control and bs_hs [DA/FA seperated by condition]
     -> 4. Integration with flight data: complete_integr [step 1], 
                                         AI_NEX [step 2 - flight vs symetry -> subset of flies with 2 wings]
-                                        NEX_wings_as_average [step 3 - flight vs wing shape -> average wings]
+                                        NEX_wings_as_average [step 3 - flight vs wing size -> average size wings]
+                                        Nex_wings_AV [step 4 - flight vs wing shape -> average wings]
                                         NEX_crossveinless [integration of flight and corssveinless phenotypes]
     -> 5.
 
