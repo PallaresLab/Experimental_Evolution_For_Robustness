@@ -13,6 +13,8 @@ library(ggplot2)
 library(borealis)
 library(readr)
 library(ggstatsplot)
+install.packages("onewaytests")
+library(onewaytests)
 ```
 
 ```{r 1 -> Prepare input for MorphoJ check, echo=FALSE}
@@ -189,8 +191,16 @@ ggarrange(a, b, c, d,
   
 #Next I validate if the change in IQR between two groups is significant.
 #We can test these differences using several non-parametric tests.
-Go_females_0523_flight_complete[Go_females_0523_flight_complete$condition == "HighSugar", ]
-Go_females_0523_flight_complete[!Go_females_0523_flight_complete$condition == "HighSugar", ]
+#Go_females_0523_flight_complete[Go_females_0523_flight_complete$condition == "HighSugar", ]
+#Go_females_0523_flight_complete[!Go_females_0523_flight_complete$condition == "HighSugar", ]
+
+#Now we need to assess the variance change. We will use only non-parametric tests to test for significance
+
+#We can first try using the Brown–Forsythe test. This test is similar to Levene test in a sence that it calculates  deviation from the median, except it doesn't require distributions to be parametric. 
+bf.test(Y ~ condition, data = Go_females_0523_flight_complete)
+
+#Second we can try using Kruskal–Wallis test. A Kruskal-Wallis Test is used to determine whether or not there is a statistically significant difference between the medians of three or more independent groups. I have just two groups.
+kruskal.test(Y ~ condition, data = Go_females_0523_flight_complete) 
 ```
 
 
