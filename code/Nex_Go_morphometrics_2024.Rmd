@@ -169,11 +169,47 @@ w <- lm(myGPA_DF$pcscores[,1]~ log(myGPA_DF$size))
 summary(w)
 ```
 
+
+```{r 7 -> Flight analysis - changes associated with diet, echo=FALSE}
+Go_females_0523_flight_complete <-read.csv("~/Desktop/GitHub/")
+Go_females_0523_flight_complete$condition = 
+ifelse(Go_females_0523_flight_complete$name_file %in% HighSugarFolders, 
+       paste("HighSugar"), paste("ControlDiet"))
+
+# We describe change in flight using four different metrics
+# IQR, Mean, CV, and Median
+a= ggplot(Go_females_0523_flight_complete, aes(x=condition, y=Y)) + labs(title = "Mean with bootsrap confidence intervals" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Condition") + ylab("Flight landing")+ stat_summary(fun.data = "mean_cl_boot", colour = "red") 
+b= ggplot(Go_females_0523_flight_complete, aes(x=condition, y=Y)) + labs(title = "Median" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Condition") + ylab("Flight landing")+ stat_summary(fun.y = "median", colour = "red") 
+c = ggplot(Go_females_0523_flight_complete, aes(x=condition, y=Y)) + labs(title = "Coefficient of variation" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Condition") + ylab("Flight landing")+ stat_summary(fun.y = "cofvar", colour = "red") 
+d= ggplot(Go_females_0523_flight_complete, aes(x=condition, y=Y)) + labs(title = "Interquartile range IQR" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Condition") + ylab("Flight landing")+ stat_summary(fun.y = "IQR", colour = "red") 
+
+ggarrange(a, b, c, d, 
+          labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 2)
+  
+#Next I validate if the change in IQR between two groups is significant.
+#We can test these differences using several non-parametric tests.
+Go_females_0523_flight_complete[Go_females_0523_flight_complete$condition == "HighSugar", ]
+Go_females_0523_flight_complete[!Go_females_0523_flight_complete$condition == "HighSugar", ]
+```
+
+
+
 ```{r 6 -> Regressions: flight vs. symetry/size/shape , echo=FALSE}
 # 6.1 - To integrate flight analysis with the dataset, we need to import all assigned ID values ordered by Y-axis as well as individual flight values in cm-s. We first merge these two datasets and then overlap that dataframe with the wing coordinates based on the 'ID' colomn
 
 #currently each replica has its own flight csv, ID txt files. Merging them to avoid extra code can be a good idea, otherwise loop-ing the read function.
 
+#I concatenated all flight csv files, preserving rownames and order
+Go_females_0523_flight_complete
+#I also concatinated each order_id into file where each colomn is a 
+Go_female_0523_orderID_complete
+#wing data can be named as
+Go_female_0523_wings_complete
+
+
+#Maybe it makes sense to make first two in a list rather than a table?
+#how to access.
 
 #after files are read, we can combine with this loop
 integrate_morphology_and_flight <- function(ids, flight, wings ) {
@@ -258,6 +294,7 @@ shape.space(wing.pca, group = wing.pca$flight, color = wes_palette("BottleRocket
 
 
 ```
+
 
 ```{r 7 -> Crossveinless vs flight}
 #step 1 - import files with the annotation of cross veins (IDs) per each folder.
