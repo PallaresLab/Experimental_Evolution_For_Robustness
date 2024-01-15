@@ -322,23 +322,28 @@ shape.space(wing.pca, group = wing.pca$flight, color = wes_palette("BottleRocket
 
 
 ```{r 9 -> Object integration heatmap, include=FALSE}
-#Last plot should show integration of all traits in a form of a heatmap.
+
+#9.1 This plot should show integration of all traits in a form of a heatmap.
 #Basic idea - produce a 'robustness score' for each trait, then visualize this numberic score on a heatmap 
 #where each row is a trait and each column is an individual (1200 inds). This design would help to show 
 #how robustness might be similar/different across traits. Robustness score can be defined as MAD (Median Absolute Deviation) for non-parametric traits (flight, symmetry) and as AAD (Average Absolute Deviation) for parametric traits such as wing shape and size.
+
 # step 1 - small dummy dataset with 1 replica. This format contains everything needed (landmarks, size, flight, etc). Need to be adjusted first.
 dummy_heatmap <- readRDS("~/Desktop/GitHub/2023_Experimental_Evolution_For_Robustness/code/dummy.RDS")
 
 #To plot AAD of wing shape, I need to figure out the mean first. mshape function can be quite handy, but the output of the substraction will still be a multivariate vector. How do I visualize variation around the mean in a univariate way?
     - #1 Approach can be to compute AAD score from PC1 that captures most (but not all variation)
     - #2 Approach two Procrustes distance from mshape and each individual? This can be achieved with ShapeDist function from evomorph, yay.
-
 wing_variation = ShapeDist(shapes = dummy_heatmap[, coords], reference = mshape(dummy_heatmap[, specify corods here]))
 #To plot MAD of wing size, there is a function in base R called mad(). However mad returns only one value in contrast to what I am trying to achieve. This value is a median of all differences, I need each value plotted, thus this function should suffice instead:
 size_robustness = abs(dummy_heatmap$size - median(dummy_heatmap$size))
 #flight MAD
 flight_robustness = abs(dummy_heatmap$Y - median(dummy_heatmap$Y)) #One problem of this approach above is that we need to normalize mad scores for each replica?
 ai_robustness = abs(dummy_heatmap$ai - median(dummy_heatmap$ai))
+
+#Here should be step to scale values
+range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+range01(ai_robustness)
 
 robustness_heatmap = rbind(wing_variation,size_robustness,flight_robustness,ai_robustness) #this dataframe contains between 1000 - 1200 values for all traits.
 
@@ -359,6 +364,20 @@ pheatmap(df_heatmap, cluster_rows = FALSE,
 # this normalisation would look different for different traits. In case of asymetry by default mean differences are removed by the package, thus should be good.
 #Normalisation for wing AAD.
 #Normalisation for flight MAD?
+
+
+
+# 9.2 - Deviation from the mean/median can be both positive and negative. In some casees, heatmap can be done for those values without taking an absolute value because positive deviation for two traits may correlate. However, in this case this won't be a classic mad/aad analysis. Here I will calculate something similar to mad/aad except that the difference will be signed
+#All values below would produce postive/negative values, except for AI values because bilat.symmetry produces only positive values. 
+#Actually ShapeDist also produces only positive values as the distance from the mean can't be negative. The values are square root of the sum of squared differences in the posititions of the landmarks in two shapes. Square root of squared differences are by default positive. 
+#So only size and flight can have signed values for deviation from the mean. Symmetry values can hypothetically be produces but I need to implement one of the Palmer's formulas by hand instead of using geomorph.
+
+size_robustness = dummy_heatmap$size - median(dummy_heatmap$size)
+flight_robustness = dummy_heatmap$Y - median(dummy_heatmap$Y)
+ai_robustness = dummy_heatmap$ai - median(dummy_heatmap$ai) #This doesn't produce signed values.
+
+# Next each trait should be scaled between -1 and 1.
+
 
 ```
 
