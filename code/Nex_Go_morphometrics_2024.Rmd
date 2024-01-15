@@ -374,13 +374,12 @@ pheatmap(df_heatmap, cluster_rows = FALSE,
                                         NEX_wings_as_average [step 3 - flight vs wing size -> average size wings]
                                         Nex_wings_AV [step 4 - flight vs wing shape -> average wings]
                                         NEX_crossveinless [integration of flight and corssveinless phenotypes]
-#I concatenated all flight csv files, preserving rownames and order
-Go_females_0523_flight_complete
-#I also concatinated each order_id into file where each colomn is a 
-Go_female_0523_orderID_complete
-#wing data can be named as
-Go_female_0523_wings_complete
-    -> 5.
+                                        #I concatenated all flight csv files, preserving rownames and order
+                                        Go_females_0523_flight_complete
+                                        #I also concatinated each order_id into file where each colomn is a 
+                                        Go_female_0523_orderID_complete
+                                        #wing data can be named as
+                                        Go_female_0523_wings_complete
 
 ```
 
