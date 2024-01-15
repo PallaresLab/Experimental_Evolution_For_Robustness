@@ -5,6 +5,8 @@ date: "2023-12-30"
 ---
 
 ```{r setup libraries, include=FALSE}
+#install.packages("onewaytests")
+#install.packages("pheatmap")
 library(stringr)
 library(readr)
 library(geomorph)
@@ -13,8 +15,9 @@ library(ggplot2)
 library(borealis)
 library(readr)
 library(ggstatsplot)
-install.packages("onewaytests")
 library(onewaytests)
+library(pheatmap)
+library(Evomorph)
 ```
 
 ```{r 1 -> Prepare input for MorphoJ check, echo=FALSE}
@@ -317,7 +320,50 @@ shape.space(wing.pca, group = wing.pca$flight, color = wes_palette("BottleRocket
 
 ```
 
-```{r 9 -> Object summary, include=FALSE}
+
+```{r 9 -> Object integration heatmap, include=FALSE}
+#Last plot should show integration of all traits in a form of a heatmap.
+#Basic idea - produce a 'robustness score' for each trait, then visualize this numberic score on a heatmap 
+#where each row is a trait and each column is an individual (1200 inds). This design would help to show 
+#how robustness might be similar/different across traits. Robustness score can be defined as MAD (Median Absolute Deviation) for non-parametric traits (flight, symmetry) and as AAD (Average Absolute Deviation) for parametric traits such as wing shape and size.
+# step 1 - small dummy dataset with 1 replica. This format contains everything needed (landmarks, size, flight, etc). Need to be adjusted first.
+dummy_heatmap <- readRDS("~/Desktop/GitHub/2023_Experimental_Evolution_For_Robustness/code/dummy.RDS")
+
+#To plot AAD of wing shape, I need to figure out the mean first. mshape function can be quite handy, but the output of the substraction will still be a multivariate vector. How do I visualize variation around the mean in a univariate way?
+    - #1 Approach can be to compute AAD score from PC1 that captures most (but not all variation)
+    - #2 Approach two Procrustes distance from mshape and each individual? This can be achieved with ShapeDist function from evomorph, yay.
+
+wing_variation = ShapeDist(shapes = dummy_heatmap[, coords], reference = mshape(dummy_heatmap[, specify corods here]))
+#To plot MAD of wing size, there is a function in base R called mad(). However mad returns only one value in contrast to what I am trying to achieve. This value is a median of all differences, I need each value plotted, thus this function should suffice instead:
+size_robustness = abs(dummy_heatmap$size - median(dummy_heatmap$size))
+#flight MAD
+flight_robustness = abs(dummy_heatmap$Y - median(dummy_heatmap$Y)) #One problem of this approach above is that we need to normalize mad scores for each replica?
+ai_robustness = abs(dummy_heatmap$ai - median(dummy_heatmap$ai))
+
+robustness_heatmap = rbind(wing_variation,size_robustness,flight_robustness,ai_robustness) #this dataframe contains between 1000 - 1200 values for all traits.
+
+#Different traits have different Mean/Median values those I need to scale them to plot each trait on a scale between 0 and 1. In this case 0 is closest to either mean or median and 1 is the furthest away (least robust).
+classifier = 
+df_heatmap = scale(df_heatmap)
+pheatmap(df_heatmap, cluster_rows = FALSE,
+         cluster_cols = F,
+         show_rownames=F,
+         show_colnames = T,
+         annotation_col=classifier)
+
+
+#Colomns of the heatmap should seperate two conditions for clarity. Those classifier is diet.
+#One last thing that can be added into this heatmap is corssveinless classifier.
+
+#Point for future: those robustness scores need to be normalized between different assays/replicas differently? Or perhaps a universal median/mean value could be used to describe a population under its treatment. Here I just need to be sure that certain replicas are not displayed differently in robustness just because their mean on average is lower/higher if that makes sence.
+# this normalisation would look different for different traits. In case of asymetry by default mean differences are removed by the package, thus should be good.
+#Normalisation for wing AAD.
+#Normalisation for flight MAD?
+
+```
+
+
+```{r 10 -> Object summary, include=FALSE}
 ''' Quick summary of ojects produced throughtout analysis. Internal directory, mostly for organizing purposes:
 
     -> 1. Read files: stucture G0RX
@@ -328,7 +374,14 @@ shape.space(wing.pca, group = wing.pca$flight, color = wes_palette("BottleRocket
                                         NEX_wings_as_average [step 3 - flight vs wing size -> average size wings]
                                         Nex_wings_AV [step 4 - flight vs wing shape -> average wings]
                                         NEX_crossveinless [integration of flight and corssveinless phenotypes]
+#I concatenated all flight csv files, preserving rownames and order
+Go_females_0523_flight_complete
+#I also concatinated each order_id into file where each colomn is a 
+Go_female_0523_orderID_complete
+#wing data can be named as
+Go_female_0523_wings_complete
     -> 5.
 
 ```
+
 
