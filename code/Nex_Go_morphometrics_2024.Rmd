@@ -316,7 +316,9 @@ shape.space(wing.pca, group = wing.pca$flight, color = wes_palette("BottleRocket
 
 #Side note: this analysis becomes important only in the context of selection results, can be ignored for now.
 
-#step 2 - check if crossveinless mark (landmark 10) has a strong impact on overall shape of PCA, and variance in wings.
+#step 2 - check if crossveinless mark (landmark 10) has a strong impact on overall shape of PCA, and variance in wings. Each folder has two set of annotations - flies with two/one missing crossvein.
+G0_ID_annotated_crossveinless <-read_csv("~/Desktop/GitHub/2023_Experimental_Evolution_For_Robustness/code/G0_ID_annotated_crossveinless.csv")
+
 
 ```
 
@@ -403,6 +405,7 @@ ai_robustness = dummy_heatmap$ai - median(dummy_heatmap$ai) #This doesn't produc
                                         Go_female_0523_orderID_complete
                                         #wing data can be named as
                                         Go_female_0523_wings_complete
+                                        G0_ID_annotated_crossveinless - crossveinless file
 
 
 ```
