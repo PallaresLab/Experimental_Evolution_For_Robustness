@@ -342,6 +342,13 @@ size_robustness = abs(dummy_heatmap$size - median(dummy_heatmap$size))
 #flight MAD
 flight_robustness = abs(dummy_heatmap$Y - median(dummy_heatmap$Y)) #One problem of this approach above is that we need to normalize mad scores for each replica?
 ai_robustness = abs(dummy_heatmap$ai - median(dummy_heatmap$ai))
+#size asymmetry should also be added to the heatmap. Something interesting here is that size also has both 
+#directional and fluctuating component. I assume that average size of L - R does not equal to 0. Would be great to 
+#note that value somewhere for a reference.
+#I need to perform LRsize_difference calculation earlier to have this variable on hand.
+hist(size_asymmetry_robustness$LRsize_difference)
+#check histogram of LRsize_difference beforehand to decide weather median or mean is used.
+size_asymmetry_robustness = abs(dummy_heatmap$LRsize_difference - median(dummy_heatmap$LRsize_difference))
 
 #Here should be step to scale values
 range01 <- function(x){(x-min(x))/(max(x)-min(x))}
@@ -349,8 +356,10 @@ ai_robustness = range01(ai_robustness)
 size_robustness = range01(size_robustness)
 flight_robustness = range01(flight_robustness)
 wing_variation = range01(wing_variation)
+size_asymmetry_robustness = range01(size_asymmetry_robustness)
 
-robustness_heatmap = rbind(wing_variation,size_robustness,flight_robustness,ai_robustness) #this dataframe contains between 1000 - 1200 values for all traits.
+
+robustness_heatmap = rbind(wing_variation,size_robustness,flight_robustness,ai_robustness, size_asymmetry_robustness) #this dataframe contains between 1000 - 1200 values for all traits.
 
 #Different traits have different Mean/Median values those I need to scale them to plot each trait on a scale between 0 and 1. In this case 0 is closest to either mean or median and 1 is the furthest away (least robust).
 #robustness_heatmap = scale(robustness_heatmap)
