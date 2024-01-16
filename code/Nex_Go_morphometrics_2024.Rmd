@@ -334,7 +334,7 @@ dummy_heatmap <- readRDS("~/Desktop/GitHub/2023_Experimental_Evolution_For_Robus
 #To plot AAD of wing shape, I need to figure out the mean first. mshape function can be quite handy, but the output of the substraction will still be a multivariate vector. How do I visualize variation around the mean in a univariate way?
     - #1 Approach can be to compute AAD score from PC1 that captures most (but not all variation)
     - #2 Approach two Procrustes distance from mshape and each individual? This can be achieved with ShapeDist function from evomorph, yay.
-wing_variation = ShapeDist(shapes = dummy_heatmap[, coords], reference = mshape(dummy_heatmap[, specify corods here]))
+wing_variation = ShapeDist(shapes = dummy_heatmap[, 11: 40], reference = mshape(arrayspecs(dummy_heatmap[, 11: 40], 15, 2)))
 #To plot MAD of wing size, there is a function in base R called mad(). However mad returns only one value in contrast to what I am trying to achieve. This value is a median of all differences, I need each value plotted, thus this function should suffice instead:
 size_robustness = abs(dummy_heatmap$size - median(dummy_heatmap$size))
 #flight MAD
@@ -343,22 +343,26 @@ ai_robustness = abs(dummy_heatmap$ai - median(dummy_heatmap$ai))
 
 #Here should be step to scale values
 range01 <- function(x){(x-min(x))/(max(x)-min(x))}
-range01(ai_robustness)
+ai_robustness = range01(ai_robustness)
+size_robustness = range01(size_robustness)
+flight_robustness = range01(flight_robustness)
+wing_variation = range01(wing_variation)
 
 robustness_heatmap = rbind(wing_variation,size_robustness,flight_robustness,ai_robustness) #this dataframe contains between 1000 - 1200 values for all traits.
 
 #Different traits have different Mean/Median values those I need to scale them to plot each trait on a scale between 0 and 1. In this case 0 is closest to either mean or median and 1 is the furthest away (least robust).
-classifier = 
-df_heatmap = scale(df_heatmap)
-pheatmap(df_heatmap, cluster_rows = FALSE,
-         cluster_cols = F,
-         show_rownames=F,
-         show_colnames = T,
-         annotation_col=classifier)
+#robustness_heatmap = scale(robustness_heatmap)
+pheatmap(robustness_heatmap, cluster_rows = FALSE,
+         cluster_cols = T,
+         show_rownames=T,
+         show_colnames = T, )
+         #annotation_col=classifier)
+#Pretty good, but normalisation on replica-level should still exist.
 
 
 #Colomns of the heatmap should seperate two conditions for clarity. Those classifier is diet.
 #One last thing that can be added into this heatmap is corssveinless classifier.
+#classifier = as.data.frame(dummy_heatmap$condition,dummy_heatmap$pair)
 
 #Point for future: those robustness scores need to be normalized between different assays/replicas differently? Or perhaps a universal median/mean value could be used to describe a population under its treatment. Here I just need to be sure that certain replicas are not displayed differently in robustness just because their mean on average is lower/higher if that makes sence.
 # this normalisation would look different for different traits. In case of asymetry by default mean differences are removed by the package, thus should be good.
