@@ -18,6 +18,9 @@ library(ggstatsplot)
 library(onewaytests)
 library(pheatmap)
 library(Evomorph)
+library(tidyverse)
+library(dplyr)
+library(reshape)
 ```
 
 ```{r 1 -> Prepare input for MorphoJ check, echo=FALSE}
@@ -318,7 +321,9 @@ shape.space(wing.pca, group = wing.pca$flight, color = wes_palette("BottleRocket
 
 #step 2 - check if crossveinless mark (landmark 10) has a strong impact on overall shape of PCA, and variance in wings. Each folder has two set of annotations - flies with two/one missing crossvein.
 G0_ID_annotated_crossveinless <-read_csv("~/Desktop/GitHub/2023_Experimental_Evolution_For_Robustness/code/G0_ID_annotated_crossveinless.csv")
-
+G0_ID_annotated_crossveinless = toupper(G0_ID_annotated_crossveinless)
+# I need to convert this to some sort of list to ovelap image IDS.
+as.data.frame(G0_ID_annotated_crossveinless$Crossveinless_one_wing)
 
 ```
 
@@ -396,8 +401,70 @@ ai_robustness = dummy_heatmap$ai - median(dummy_heatmap$ai) #This doesn't produc
 
 ```
 
+```{r 10 -> Variability in egg-lay pattern, include=TRUE}
+#This is supplementary part of Go, that was completed seperately by exposing NEX to HS for 1 generation and estimating variability of fecundity in two conditions
 
-```{r 10 -> Object summary, include=FALSE}
+#25.12.24, Saudat Alishayeva
+#Analysis of fecundity/develpoment/egg-to-adult survival in NEX population (exposed to HS vs Control)
+
+#Input format: data include 5 egg-lays and 10 replicas. Each egg-lay lead to several collections of adults (2-3).
+#collections are only important in reference to the developmental timing, therefore can be safely ignored for some analysis after merging the data.
+
+#Question 1: Do flies exhibit more variable egg-laying behavior in high-sugar compared to control groups?
+#To answer this question, I will check for variation in number of eggs across replicas and time-points. 
+#I will first look at overall result and then visualize variaiton across time-points seperately since some variation can be noted on the later stages due to artifacts (e.g. flies died in a few vials).
+
+#Import fecundity data
+setwd("~/Desktop/code/fecundity_NEX/")
+fecundity <- read.delim("NEX_fecundity_expanded_E4_E6.txt")
+fecundity$ID = paste(fecundity$Group,fecundity$Vial, sep = "_")
+
+#libraries
+
+
+#plot the data, but to plot everything I need to reshape it first
+#here column time now saves information about each egg-lay in integer form, we need to convert it to a character or a factor
+fecundity_reshaped = reshape(fecundity, idvar = "ID", varying = list(3:8), direction = "long")
+fecundity_reshaped$time = as.factor(fecundity_reshaped$time)
+#now a violin or histogram should be enough to see the variance 
+ggplot(fecundity_reshaped, aes(x=Group, y=E1, fill=Group)) + geom_violin(trim=FALSE) + theme_minimal() + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(1)) + ylab("Variation in fecundity across replicas/time points")
+#dotplot to understand if there're any biases coming from replicas not group as the whole.
+ggplot(fecundity_reshaped, aes(x=ID, y=E1, fill=ID)) + theme_minimal() + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(1), dotsize = 0.6) + ylab("Variation in fecundity across replicas/time points")
+#now ploting the same thing but for egg-lays
+ggplot(fecundity_reshaped, aes(x=time, y=E1, fill=Group)) + theme_minimal() + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(1), dotsize = 0.6) + ylab("Variation in fecundity across replicas/time points")
+
+#statistical tests for variability
+# Question: does high-sugar cause more variable egg-laying behavior compared to control?
+# There are three ways to answer this:
+# 1. Test for variance group 1 vs group 2
+bf.test(E1 ~ Group, data = fecundity_reshaped)
+kruskal.test(E1 ~ Group, data = fecundity_reshaped) 
+#Results:   Brown-Forsythe Test -> significant ... Kruskal-Wallis -> not-significant
+# 2. Get a measure of variability for each vial (across 6 collections) and compare sd scores between groups (10 vs 10 values)
+# 2.1 - first lets make a plot ouf of this. We can use IQR,sd,mad as a stats summary 
+
+#based on these two plots, I can identify potential outlier vials
+
+ggplot(fecundity_reshaped, aes(x=as.factor(fecundity_reshaped$Vial), y=E1)) + labs(title = "Variability" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Egg-lay") + ylab("Variability")+ stat_summary(fun = "sd",aes(color=paste(Group))) + theme_minimal() +scale_fill_viridis(discrete = T)
+
+ggplot(fecundity_reshaped, aes(x=Group, y=E1)) + labs(title = "Variability" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Egg-lay") + ylab("Variability")+ stat_summary(fun = "IQR",aes(color=paste(as.factor(fecundity_reshaped$Vial)))) + theme_minimal() +scale_fill_viridis(discrete = T)
+
+bf.test(E1 ~ Group, data = fecundity_reshaped[fecundity_reshaped$Vial == 3,])
+kruskal.test(E1 ~ Group, data = fecundity_reshaped[fecundity_reshaped$Vial == 7,]) 
+#Vials 3 and 7 contribute in a stat sign way
+
+# 3. Compare if variability peaks across different time-points in 10 replicas (6 vs 6 values).
+ggplot(fecundity_reshaped, aes(x=as.factor(fecundity_reshaped$time), y=E1, fill = Group)) + labs(title = "Variability" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Egg-lay") + ylab("Variability")+ stat_summary(fun = "IQR",aes(color=paste(Group))) + theme_minimal() +scale_fill_viridis(discrete = T)
+#Yes it seems that the most pronounced difference in fecundity variability starts at E3, which corresponds to fruit fly age of ~8 days old.
+
+bf.test(E1 ~ Group, data = fecundity_reshaped[fecundity_reshaped$time == 2,]) #only time point 2 is significant
+kruskal.test(E1 ~ Group, data = fecundity_reshaped[fecundity_reshaped$time == 2,])  #only time point 2 is significant
+```
+
+
+
+
+```{r 11 -> Object summary, include=FALSE}
 ''' Quick summary of ojects produced throughtout analysis. Internal directory, mostly for organizing purposes:
 
     -> 1. Read files: stucture G0RX
