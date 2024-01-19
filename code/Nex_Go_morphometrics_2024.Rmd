@@ -7,11 +7,13 @@ date: "2023-12-30"
 ```{r setup libraries, include=FALSE}
 #install.packages("onewaytests")
 #install.packages("pheatmap")
+
 library(stringr)
 library(readr)
 library(geomorph)
 library(gplots)
 library(ggplot2)
+library(ggpubr)
 library(borealis)
 library(readr)
 library(ggstatsplot)
@@ -179,17 +181,21 @@ summary(w)
 
 
 ```{r 6 -> Flight analysis - changes associated with diet, echo=FALSE}
-Go_females_0523_flight_complete <-read.csv("~/Desktop/GitHub/")
+
+#
+HighSugarFolders = c("phen2705_b2.csv", "" .. )
+
+Go_females_0523_flight_complete <-read.csv("Go_females_0523_flight_complete.csv", row.names = NULL)
 Go_females_0523_flight_complete$condition = 
 ifelse(Go_females_0523_flight_complete$name_file %in% HighSugarFolders, 
        paste("HighSugar"), paste("ControlDiet"))
 
 # We describe change in flight using four different metrics
 # IQR, Mean, CV, and Median
-a= ggplot(Go_females_0523_flight_complete, aes(x=condition, y=Y)) + labs(title = "Mean with bootsrap confidence intervals" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Condition") + ylab("Flight landing")+ stat_summary(fun.data = "mean_cl_boot", colour = "red") 
-b= ggplot(Go_females_0523_flight_complete, aes(x=condition, y=Y)) + labs(title = "Median" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Condition") + ylab("Flight landing")+ stat_summary(fun.y = "median", colour = "red") 
-c = ggplot(Go_females_0523_flight_complete, aes(x=condition, y=Y)) + labs(title = "Coefficient of variation" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Condition") + ylab("Flight landing")+ stat_summary(fun.y = "cofvar", colour = "red") 
-d= ggplot(Go_females_0523_flight_complete, aes(x=condition, y=Y)) + labs(title = "Interquartile range IQR" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Condition") + ylab("Flight landing")+ stat_summary(fun.y = "IQR", colour = "red") 
+a= ggplot(Go_females_0523_flight_complete, aes(x=name_file, y=Y)) + labs(title = "Mean with bootsrap confidence intervals" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Condition") + ylab("Flight landing")+ stat_summary(fun.data = "mean_cl_boot", colour = "red") 
+b= ggplot(Go_females_0523_flight_complete, aes(x=name_file, y=Y)) + labs(title = "Median" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Condition") + ylab("Flight landing")+ stat_summary(fun.y = "median", colour = "red") 
+c = ggplot(Go_females_0523_flight_complete, aes(x=name_file, y=Y)) + labs(title = "Median Absolute Deviation" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Condition") + ylab("Flight landing")+ stat_summary(fun.y = "mad", colour = "red") 
+d= ggplot(Go_females_0523_flight_complete, aes(x=name_file, y=Y)) + labs(title = "Interquartile range IQR" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Condition") + ylab("Flight landing")+ stat_summary(fun.y = "IQR", colour = "red") 
 
 ggarrange(a, b, c, d, 
           labels = c("A", "B", "C", "D"),
@@ -217,7 +223,7 @@ kruskal.test(Y ~ condition, data = Go_females_0523_flight_complete)
 #currently each replica has its own flight csv, ID txt files. Merging them to avoid extra code can be a good idea, otherwise loop-ing the read function.
 
 #I concatenated all flight csv files, preserving rownames and order
-Go_females_0523_flight_complete
+Go_females_0523_flight_complete <-read.csv("Go_females_0523_flight_complete.csv", row.names = NULL)
 #I also concatinated each order_id into file where each colomn is a 
 Go_female_0523_orderID_complete
 #wing data can be named as
@@ -437,9 +443,11 @@ ggplot(fecundity_reshaped, aes(x=time, y=E1, fill=Group)) + theme_minimal() + ge
 # Question: does high-sugar cause more variable egg-laying behavior compared to control?
 # There are three ways to answer this:
 # 1. Test for variance group 1 vs group 2
-bf.test(E1 ~ Group, data = fecundity_reshaped)
+bf.test(E1 ~ Group, data = fecundity_reshaped[fecundity_reshaped$ID != "NEX_HS_7",])
 kruskal.test(E1 ~ Group, data = fecundity_reshaped) 
+
 #Results:   Brown-Forsythe Test -> significant ... Kruskal-Wallis -> not-significant
+#If I remove vial #7 then the result becomes non-significant, but its okay otherwise
 # 2. Get a measure of variability for each vial (across 6 collections) and compare sd scores between groups (10 vs 10 values)
 # 2.1 - first lets make a plot ouf of this. We can use IQR,sd,mad as a stats summary 
 
