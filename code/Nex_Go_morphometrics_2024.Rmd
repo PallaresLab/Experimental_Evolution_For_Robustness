@@ -23,6 +23,8 @@ library(Evomorph)
 library(tidyverse)
 library(dplyr)
 library(reshape)
+library(csaw)
+library(RColorBrewer)
 ```
 
 ```{r 1 -> Prepare input for MorphoJ check, echo=FALSE}
@@ -404,6 +406,20 @@ ai_robustness = dummy_heatmap$ai - median(dummy_heatmap$ai) #This doesn't produc
 
 # Next each trait should be scaled between -1 and 1.
 
+#9.3 - PCA plot made with robustness scores
+
+#copying this from the older code, just change variable names/condition where needed
+#cct = assay(robustness_heatmap, blind  = T)
+PCA <- prcomp(t(robustness_heatmap), scale = F)
+percentVar <- round(100 * PCA$sdev ^ 2/ sum(PCA$sdev ^ 2), 1)
+plotPCA.df = data.frame(PC1 = PCA$x[,1], PC2 = PCA$x[,2], PC3 = PCA$x[,3], PC4 = PCA$x[,4])
+                       # sample = paste0(colData(dds)$SampleID,"_", colData(dds)$age),  #change meta data here
+                       # condition = as.character(colData(dds)$age), batch = colData(dds)$mutation) #there is a chance to make corrections for batch or assays here
+
+qplot(PC1, PC2, data = plotPCA.df, #color = as.factor(dds$Condition), main = "PC1 vs PC2 of robustness scores",
+      size = I(6))+ labs(x = paste0("PC1, VarExp:", round(percentVar[1],4)),  y = paste0("PC2, VarExp:", round(percentVar[2],4))) + scale_color_manual(values = colorRampPalette(brewer.pal(n = 5, name = "RdBu"))(4))+ theme_classic() + theme(aspect.ratio=1)
+
+#done, add colors:)
 
 ```
 
@@ -456,6 +472,8 @@ kruskal.test(E1 ~ Group, data = fecundity_reshaped)
 ggplot(fecundity_reshaped, aes(x=as.factor(fecundity_reshaped$Vial), y=E1)) + labs(title = "Variability" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Egg-lay") + ylab("Variability")+ stat_summary(fun = "sd",aes(color=paste(Group))) + theme_minimal() +scale_fill_viridis(discrete = T)
 
 ggplot(fecundity_reshaped, aes(x=Group, y=E1)) + labs(title = "Variability" ) + theme(axis.text.x = element_text(size = 8))+ xlab("Egg-lay") + ylab("Variability")+ stat_summary(fun = "IQR",aes(color=paste(as.factor(fecundity_reshaped$Vial)))) + theme_minimal() +scale_fill_viridis(discrete = T)
+
+#We can first try using the Brown–Forsythe test. This test is similar to Levene test in a sence that it calculates  deviation from the median, except it doesn't require distributions to be parametric. 
 
 bf.test(E1 ~ Group, data = fecundity_reshaped[fecundity_reshaped$Vial == 3,])
 kruskal.test(E1 ~ Group, data = fecundity_reshaped[fecundity_reshaped$Vial == 7,]) 
