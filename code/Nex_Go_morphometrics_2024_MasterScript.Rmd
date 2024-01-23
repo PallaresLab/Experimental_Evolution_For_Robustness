@@ -155,7 +155,7 @@ ggbetweenstats(
 
 #4.2 - extract and plot asymetry index
 symetry_per_group = as.data.frame(bs$signed.AI, bs$condition, bs$Replica) #check if bs has replica colomns
-symetry_per_group$Replica = myGPA$Replica
+#symetry_per_group$Replica = bs$Replica
 symetry_per_group$CONDITION  = rownames(symetry_per_group)
 symetry_per_group$CONDITION = stringr::str_extract(symetry_per_group$CONDITION, "^.{10}")
 symetry_per_group = na.omit(symetry_per_group) # character 'ind' by default is added to condition (Geomorph shows that twis is combined data)
@@ -287,7 +287,7 @@ ggscatter(complete_integr, x = "size", y = "Y", add = "reg.line", conf.int = TRU
 #subset high-sugar and control data seperately to test if correlation exists.
 
 # 7.2 - Next step in regression analysis is to generate 'average' wings for each ID. For one individual, we need to have a flight score + L/R wing average. In case if there is only one wing per individual (e.g. left wing avail, while right was damaged or missing), we will keep information from the only available wing.
-#we generate an object named AI_NEX by first seperate single/double wing individuals.
+#we generate an object named AI_NEX by first seperating single/double wing individuals.
 df = as.matrix(two.d.array(shapes_aligned$coords))
 df = as.data.frame(df)
 df$pair = myGPA$pairs
@@ -297,24 +297,27 @@ NEX_wings_as = df[!df$pair %in% NEX_wings_sm$pair,]
 dim(NEX_wings)
 dim(NEX_wings_sm)
 dim(NEX_wings_as)
-NEX_wings_as_average <- aggregate(NEX_wings_sm, by=NEX_wings_sm["pair"], mean )
+NEX_wings_as_average <- aggregate(NEX_wings_sm, by=NEX_wings_sm["pair"], mean ) #generate an average wing when two wings are present 
 
+#this creates a duplicated object entry, need a better way to arrange this
 # One can further check is size differences between right an lest correlate with the flight:
 minus <- function(x) {x[1] - x[2]} # I used this to find difference in right versus left
-NEX_wings_as_average <- aggregate(NEX_wings_sm$size, by=NEX_wings_sm["pair"], minus )
-dim(Nex_wings_AV)
+NEX_wings_as_average_size_asymetrty <- aggregate(NEX_wings_sm$size, by=NEX_wings_sm["pair"], minus )
+NEX_wings_as_average$size_difference = NEX_wings_as_average_size_asymetrty$size
 
-# this needs to be assigned separately because main obejcts has a different order individuals.
+#Nex_wings_AV is different from NEX_wings_as_average, should have a better transition here
+
+# this needs to be assigned separately because main obejcts has a different order of individuals.
 Nex_wings_AV$condition = stringr::str_extract(Nex_wings_AV$pair, "^.{7}")
 Nex_wings_AV$logsize=  log10(Nex_wings_AV$size)
 Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "ctrl_ns", paste("Control diet + no selection"), Nex_wings_AV$condition )
 Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "ctrl_fs", paste("Control diet + flight selection"), Nex_wings_AV$condition )
 Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "hgSg_ns", paste("High Sugar diet + no selection"), Nex_wings_AV$condition )
 Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "hgSg_fs", paste("High Sugar diet + flight selection"), Nex_wings_AV$condition )
-ggbetweenstats(
-  data  = Nex_wings_AV,
-  x     = condition,
-  y     = logsize,
+ggbetweenstats(data  = Nex_wings_AV,x     = condition, y     = logsize,
+  title = "Wing size distribution per group", pairwise.display = "significant", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups",results.subtitle = FALSE, ylab = "Log 10 -Wing Centrod Size", palette = "Accent")
+#make the same plot but for different replicas
+ggbetweenstats(data  = Nex_wings_AV,x     = Replica, y     = logsize,
   title = "Wing size distribution per group", pairwise.display = "significant", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups",results.subtitle = FALSE, ylab = "Log 10 -Wing Centrod Size", palette = "Accent")
 
 
