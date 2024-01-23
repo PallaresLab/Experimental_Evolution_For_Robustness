@@ -56,10 +56,26 @@ G0R9$condition = "hgSg_fs"
 G0R10$condition = "hgSg_ns"
 G0R11$condition = "hgSg_ns"
 G0R12$condition = "hgSg_ns"
+
+G0R1$Replica = "G0R1"
+G0R2$Replica = "G0R2"
+G0R3$Replica = "G0R3"
+G0R4$Replica = "G0R4"
+G0R5$Replica = "G0R5"
+G0R6$Replica = "G0R6"
+G0R7$Replica = "G0R7"
+G0R8$Replica = "G0R8"
+G0R9$Replica = "G0R9"
+G0R10$Replica = "G0R10"
+G0R11$Replica = "G0R11"
+G0R12$Replica = "G0R12"
+
 #merge all 12
 complete = rbind(G0R1,G0R2,G0R3,G0R4,G0R5,G0R6,G0R7,G0R8,G0R9,G0R10,G0R11,G0R12)
+#complete$Replica = #make sure you define this before merging
+  
 complete$symetry = ifelse(str_detect(complete$id, "R"), print("R"), print("L"))
-complete$id = paste(complete$id, complete$condition, complete$symetry, sep = "_")
+complete$id = paste(complete$id,complete$Replica, complete$condition, complete$symetry, sep = "_")
 write.table(complete, "NEX_morphometrics_Go.txt", quote = F)
 #The output must be first checked with morphoJ for swaped landmarks.
 #Outlier images can also be removed later in Geomorph.
@@ -96,6 +112,8 @@ myGPA$condition = NEX_wings$condition
 myGPA$ids = NEX_wings$id
 myGPA$symetry = NEX_wings$symetry
 myGPA$pairs = NEX_wings$pair
+myGPA$Replica = NEX_wings$Replica
+
 NEX_wings$condition=ifelse(NEX_wings$condition == "ctrl_ns", paste("Control diet"), NEX_wings$condition )
 NEX_wings$condition=ifelse(NEX_wings$condition == "ctrl_fs", paste("Control diet"), NEX_wings$condition )
 NEX_wings$condition=ifelse(NEX_wings$condition == "hgSg_ns", paste("High Sugar diet"), NEX_wings$condition )
@@ -129,6 +147,7 @@ ggbetweenstats(
 
 #4.2 - extract and plot asymetry index
 symetry_per_group = as.data.frame(bs$signed.AI, bs$condition)
+symetry_per_group$Replica = myGPA$Replica
 symetry_per_group$CONDITION  = rownames(symetry_per_group)
 symetry_per_group$CONDITION = stringr::str_extract(symetry_per_group$CONDITION, "^.{10}")
 symetry_per_group = na.omit(symetry_per_group) # character 'ind' by default is added to condition (Geomorph shows that twis is combined data)
@@ -143,8 +162,15 @@ ggbetweenstats(
   x     = CONDITION,
   y     = AI,
   title = "Wing symetry index distribution per group", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups", ylab = "Symetry Index",results.subtitle = FALSE, palette = "Accent")
-# Geomorph produces AI in two forms: signed and unsigned.
-#Signed represents 
+
+#let's make this plot not only based on conditions but also based on replicas
+ggplot(symetry_per_group, aes(x=symetry_per_group$`bs$signed.AI`, fill = CONDITION)) + geom_histogram(alpha = 0.7, position = "identity", bins = 30) + theme_minimal()
+ggbetweenstats(
+  data  = symetry_per_group,
+  x     = CONDITION,
+  y     = AI,
+  title = "Wing symetry index distribution per group", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups", ylab = "Symetry Index",results.subtitle = FALSE, palette = "Accent")
+
 
 
 #4.3 - seperate FA and DA in four groups (two groups in Go)
