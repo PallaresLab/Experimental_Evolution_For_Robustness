@@ -134,7 +134,7 @@ shape.space(wing.pca, group = NEX_wings$condition, group.title = 'Condition', co
 bs = bilat.symmetry(shapes_aligned$coords, ind = shapes_aligned$pairs, side =  shapes_aligned$symetry) #check if object.sym=T is required, my understanding is that its only necessery for radially symetrical images, or if two wings were present in the same file.
 
 #4.1 - extract and plot sizes
-sizes_per_group = as.data.frame(myGPA$Csize, myGPA$Cond_full)
+sizes_per_group = as.data.frame(myGPA$Csize, myGPA$Cond_full,myGPA$Replica)
 sizes_per_group$Cond_full  = rownames(sizes_per_group)
 sizes_per_group$size = sizes_per_group$`myGPA$Csize`
 ggplot(sizes_per_group, aes(x=sizes_per_group$`myGPA$Csize`, fill = Cond_full)) + geom_density(alpha = 0.6, position = "identity", bins = 30) + theme_minimal() + xlab("Wing size distribution per group")
@@ -145,8 +145,14 @@ ggbetweenstats(
   y     = logsize,
   title = "Wing size distribution per group", pairwise.display = "significant", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups",results.subtitle = FALSE, ylab = "Log 10 -Wing Centrod Size", palette = "Accent")
 
+ggbetweenstats(
+  data  = sizes_per_group,
+  x     = Replica,
+  y     = logsize,
+  title = "Wing size distribution per group", pairwise.display = "significant", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups",results.subtitle = FALSE, ylab = "Log 10 -Wing Centrod Size", palette = "Accent")
+
 #4.2 - extract and plot asymetry index
-symetry_per_group = as.data.frame(bs$signed.AI, bs$condition)
+symetry_per_group = as.data.frame(bs$signed.AI, bs$condition, bs$Replica) #check if bs has replica colomns
 symetry_per_group$Replica = myGPA$Replica
 symetry_per_group$CONDITION  = rownames(symetry_per_group)
 symetry_per_group$CONDITION = stringr::str_extract(symetry_per_group$CONDITION, "^.{10}")
@@ -164,13 +170,11 @@ ggbetweenstats(
   title = "Wing symetry index distribution per group", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups", ylab = "Symetry Index",results.subtitle = FALSE, palette = "Accent")
 
 #let's make this plot not only based on conditions but also based on replicas
-ggplot(symetry_per_group, aes(x=symetry_per_group$`bs$signed.AI`, fill = CONDITION)) + geom_histogram(alpha = 0.7, position = "identity", bins = 30) + theme_minimal()
 ggbetweenstats(
   data  = symetry_per_group,
-  x     = CONDITION,
+  x     = Replica,
   y     = AI,
   title = "Wing symetry index distribution per group", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups", ylab = "Symetry Index",results.subtitle = FALSE, palette = "Accent")
-
 
 
 #4.3 - seperate FA and DA in four groups (two groups in Go)
