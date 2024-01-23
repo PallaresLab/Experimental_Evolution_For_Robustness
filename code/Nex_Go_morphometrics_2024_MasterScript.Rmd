@@ -252,20 +252,52 @@ kruskal.test(Y ~ condition, data = Go_females_0523_flight_complete)
 
 
 ```{r 7 -> Regressions: flight vs. symetry/size/shape , echo=FALSE}
-# 7.1 - To integrate flight analysis with the dataset, we need to import all assigned ID values ordered by Y-axis as well as individual flight values in cm-s. We first merge these two datasets and then overlap that dataframe with the wing coordinates based on the 'ID' colomn
+# 7.1 - First step in regression analysis is to generate 'average' wings for each ID. For one individual, we need to have a flight score + L/R wing average. In case if there is only one wing per individual (e.g. left wing avail, while right was damaged or missing), we will keep information from the only available wing.
+#we generate an object named AI_NEX by first seperating single/double wing individuals.
+df = as.matrix(two.d.array(shapes_aligned$coords))
+df = as.data.frame(df)
+df$pair = myGPA$pairs
+df$size = myGPA$Csize
+NEX_wings_sm = df[duplicated(df$pair) | duplicated(df$pair, fromLast=TRUE), ]
+NEX_wings_as = df[!df$pair %in% NEX_wings_sm$pair,]
+dim(NEX_wings)
+dim(NEX_wings_sm)
+dim(NEX_wings_as)
+NEX_wings_as_average <- aggregate(NEX_wings_sm, by=NEX_wings_sm["pair"], mean ) #generate an average wing when two wings are present 
+
+#this creates a duplicated object entry, need a better way to arrange this
+# One can further check is size differences between right an lest correlate with the flight:
+minus <- function(x) {x[1] - x[2]} # I used this to find difference in right versus left
+NEX_wings_as_average_size_asymetrty <- aggregate(NEX_wings_sm$size, by=NEX_wings_sm["pair"], minus )
+NEX_wings_as_average$size_difference = NEX_wings_as_average_size_asymetrty$size
+
+#Nex_wings_AV =  NEX_wings_as_average (average of two wings when two wings are present) + NEX_wings_as (one wing if only one is present)
+NEX_wings_as$size_difference = NA #this colomn needs to be present for other analysis, if flies have one wing, there is no size difference in wings that can be assigned, so NA values are added ahead of merging two dataframes.
+Nex_wings_AV = rbind(NEX_wings_as_average,NEX_wings_as)
+
+# this needs to be assigned separately because main obejcts has a different order of individuals.
+Nex_wings_AV$condition = stringr::str_extract(Nex_wings_AV$pair, "^.{7}")
+Nex_wings_AV$logsize=  log10(Nex_wings_AV$size)
+Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "ctrl_ns", paste("Control diet + no selection"), Nex_wings_AV$condition )
+Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "ctrl_fs", paste("Control diet + flight selection"), Nex_wings_AV$condition )
+Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "hgSg_ns", paste("High Sugar diet + no selection"), Nex_wings_AV$condition )
+Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "hgSg_fs", paste("High Sugar diet + flight selection"), Nex_wings_AV$condition )
+ggbetweenstats(data  = Nex_wings_AV,x     = condition, y     = logsize,
+  title = "Wing size distribution per group", pairwise.display = "significant", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups",results.subtitle = FALSE, ylab = "Log 10 -Wing Centrod Size", palette = "Accent")
+#make the same plot but for different replicas
+ggbetweenstats(data  = Nex_wings_AV,x     = Replica, y     = logsize,
+  title = "Wing size distribution per group", pairwise.display = "significant", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups",results.subtitle = FALSE, ylab = "Log 10 -Wing Centrod Size", palette = "Accent")
+
+# 7.2 - To integrate flight analysis with the dataset, we need to import all assigned ID values ordered by Y-axis as well as individual flight values in cm-s. We first merge these two datasets and then overlap that dataframe with the wing coordinates based on the 'ID' colomn
 
 #currently each replica has its own flight csv, ID txt files. Merging them to avoid extra code can be a good idea, otherwise loop-ing the read function.
 
 #I concatenated all flight csv files, preserving rownames and order
 Go_females_0523_flight_complete <-read.csv("Go_females_0523_flight_complete.csv", row.names = NULL)
-#I also concatinated each order_id into file where each colomn is a 
-Go_female_0523_orderID_complete
-#wing data can be named as
-Go_female_0523_wings_complete
-
-
-#Maybe it makes sense to make first two in a list rather than a table?
-#how to access.
+#I also concatenated each order_id into file where each column 
+Go_female_0523_orderID_complete <-read.csv("Go_female_0523_orderID_complete.csv")
+#wing data - there are several versions depending on amount of information/wings included. Nex_wings_AV provides the most useful starting point.
+Go_female_0523_wings_complete = Nex_wings_AV
 
 #after files are read, we can combine with this loop
 integrate_morphology_and_flight <- function(ids, flight, wings ) {
@@ -286,42 +318,9 @@ complete_integr = rbind(G0R1_integrated,G0R2_integrated,G0R3_integrated,G0R4_int
 ggscatter(complete_integr, x = "size", y = "Y", add = "reg.line", conf.int = TRUE,cor.coef = TRUE, cor.method = "pearson")
 #subset high-sugar and control data seperately to test if correlation exists.
 
-# 7.2 - Next step in regression analysis is to generate 'average' wings for each ID. For one individual, we need to have a flight score + L/R wing average. In case if there is only one wing per individual (e.g. left wing avail, while right was damaged or missing), we will keep information from the only available wing.
-#we generate an object named AI_NEX by first seperating single/double wing individuals.
-df = as.matrix(two.d.array(shapes_aligned$coords))
-df = as.data.frame(df)
-df$pair = myGPA$pairs
-df$size = myGPA$Csize
-NEX_wings_sm = df[duplicated(df$pair) | duplicated(df$pair, fromLast=TRUE), ]
-NEX_wings_as = df[!df$pair %in% NEX_wings_sm$pair,]
-dim(NEX_wings)
-dim(NEX_wings_sm)
-dim(NEX_wings_as)
-NEX_wings_as_average <- aggregate(NEX_wings_sm, by=NEX_wings_sm["pair"], mean ) #generate an average wing when two wings are present 
-
-#this creates a duplicated object entry, need a better way to arrange this
-# One can further check is size differences between right an lest correlate with the flight:
-minus <- function(x) {x[1] - x[2]} # I used this to find difference in right versus left
-NEX_wings_as_average_size_asymetrty <- aggregate(NEX_wings_sm$size, by=NEX_wings_sm["pair"], minus )
-NEX_wings_as_average$size_difference = NEX_wings_as_average_size_asymetrty$size
-
-#Nex_wings_AV is different from NEX_wings_as_average, should have a better transition here
-
-# this needs to be assigned separately because main obejcts has a different order of individuals.
-Nex_wings_AV$condition = stringr::str_extract(Nex_wings_AV$pair, "^.{7}")
-Nex_wings_AV$logsize=  log10(Nex_wings_AV$size)
-Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "ctrl_ns", paste("Control diet + no selection"), Nex_wings_AV$condition )
-Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "ctrl_fs", paste("Control diet + flight selection"), Nex_wings_AV$condition )
-Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "hgSg_ns", paste("High Sugar diet + no selection"), Nex_wings_AV$condition )
-Nex_wings_AV$condition =  ifelse(Nex_wings_AV$condition == "hgSg_fs", paste("High Sugar diet + flight selection"), Nex_wings_AV$condition )
-ggbetweenstats(data  = Nex_wings_AV,x     = condition, y     = logsize,
-  title = "Wing size distribution per group", pairwise.display = "significant", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups",results.subtitle = FALSE, ylab = "Log 10 -Wing Centrod Size", palette = "Accent")
-#make the same plot but for different replicas
-ggbetweenstats(data  = Nex_wings_AV,x     = Replica, y     = logsize,
-  title = "Wing size distribution per group", pairwise.display = "significant", centrality.plotting = F, p.adjust.method = "bonferroni",xlab = "Groups",results.subtitle = FALSE, ylab = "Log 10 -Wing Centrod Size", palette = "Accent")
-
-
-# 7.3 - Once we checked if the shape of avareage wing per individual correlated with flight, we need to further test if symetry also correlates with flight. To go ahead, we first subset data that always have two wings per individual
+# 7.3 - Once we checked if the shape of avareage wing per individual correlated with flight, we need to further test if symmetry also correlates with flight. To go ahead, we first subset data that always have two wings per individual
+#Here we need to transition to AI index which is exclusively assigned to flies that have both wings present, we extract it from bilat.symetry (bs) object.
+AI_NEX = as.data.frame(bs$signed.AI)
 AI_NEX$pair =str_split_i(rownames(AI_NEX), "ind",2)
 AI_NEX$ai = AI_NEX$`bs$signed.AI`
 dim(AI_NEX)
@@ -363,33 +362,39 @@ shape.space(wing.pca, group = wing.pca$flight, color = wes_palette("BottleRocket
 #Side note: this analysis becomes important only in the context of selection results, can be ignored for now.
 
 #step 2 - check if crossveinless mark (landmark 10) has a strong impact on overall shape of PCA, and variance in wings. Each folder has two set of annotations - flies with two/one missing crossvein.
-G0_ID_annotated_crossveinless <-read_csv("~/Desktop/GitHub/2023_Experimental_Evolution_For_Robustness/code/G0_ID_annotated_crossveinless.csv")
+G0_ID_annotated_crossveinless <-read_csv("~/Desktop/GitHub/2023_Experimental_Evolution_For_Robustness/code/data/G0_ID_annotated_crossveinless.csv")
 G0_ID_annotated_crossveinless = toupper(G0_ID_annotated_crossveinless)
 # I need to convert this to some sort of list to ovelap image IDS.
 as.data.frame(G0_ID_annotated_crossveinless$Crossveinless_one_wing)
+#this file needs to be transposed + ids made in a consistent manner with the rest of the objects. Currently it is = flight_id + Replica + condition + symmetry (L/R) and separated by an underscore.
 
 ```
 
 
 ```{r 9 -> Object integration heatmap, include=FALSE}
+#9.1 This plot should show integration of all traits in a form of a heatmap. One limiting factor in this heatmap is size_difference colpomn as well as asymetry index (ai) colomn because some flies do not have those values. I will those create a heatmap that has all data and a supplementary heatmap without ai index to include the rest of the flies.
 
-#9.1 This plot should show integration of all traits in a form of a heatmap.
+
 #Basic idea - produce a 'robustness score' for each trait, then visualize this numberic score on a heatmap 
 #where each row is a trait and each column is an individual (1200 inds). This design would help to show 
 #how robustness might be similar/different across traits. Robustness score can be defined as MAD (Median Absolute Deviation) for non-parametric traits (flight, symmetry) and as AAD (Average Absolute Deviation) for parametric traits such as wing shape and size.
 
-# step 1 - small dummy dataset with 1 replica. This format contains everything needed (landmarks, size, flight, etc). Need to be adjusted first.
-dummy_heatmap <- readRDS("~/Desktop/GitHub/2023_Experimental_Evolution_For_Robustness/code/dummy.RDS")
+# step 1 - use AI_NEX_merges_na as the starting point because it has all data merged and NA removed. 
+#to test the functions I used a dummy file with all colomns/conditions specified, this can be accessed if necessary
+#dummy_heatmap <- readRDS("~/Desktop/GitHub/2023_Experimental_Evolution_For_Robustness/code/supplementary/dummy.RDS")
+
+#This data frame provides: flight data, coords, ai_index, sizes, and size differences
+#This format contains everything needed (landmarks, size, flight, etc). Need to be adjusted first.
 
 #To plot AAD of wing shape, I need to figure out the mean first. mshape function can be quite handy, but the output of the substraction will still be a multivariate vector. How do I visualize variation around the mean in a univariate way?
     - #1 Approach can be to compute AAD score from PC1 that captures most (but not all variation)
     - #2 Approach two Procrustes distance from mshape and each individual? This can be achieved with ShapeDist function from evomorph, yay.
-wing_variation = ShapeDist(shapes = dummy_heatmap[, 11: 40], reference = mshape(arrayspecs(dummy_heatmap[, 11: 40], 15, 2)))
+wing_variation = ShapeDist(shapes = AI_NEX_merges_na[, 11: 40], reference = mshape(arrayspecs(dummy_heatmap[, 11: 40], 15, 2)))
 #To plot MAD of wing size, there is a function in base R called mad(). However mad returns only one value in contrast to what I am trying to achieve. This value is a median of all differences, I need each value plotted, thus this function should suffice instead:
-size_robustness = abs(dummy_heatmap$size - median(dummy_heatmap$size))
+size_robustness = abs(AI_NEX_merges_na$size - median(AI_NEX_merges_na$size))
 #flight MAD
-flight_robustness = abs(dummy_heatmap$Y - median(dummy_heatmap$Y)) #One problem of this approach above is that we need to normalize mad scores for each replica?
-ai_robustness = abs(dummy_heatmap$ai - median(dummy_heatmap$ai))
+flight_robustness = abs(AI_NEX_merges_na$Y - median(AI_NEX_merges_na$Y)) #One problem of this approach above is that we need to normalize mad scores for each replica?
+ai_robustness = abs(AI_NEX_merges_na$ai - median(AI_NEX_merges_na$ai))
 #size asymmetry should also be added to the heatmap. Something interesting here is that size also has both 
 #directional and fluctuating component. I assume that average size of L - R does not equal to 0. Would be great to 
 #note that value somewhere for a reference.
@@ -406,9 +411,13 @@ flight_robustness = range01(flight_robustness)
 wing_variation = range01(wing_variation)
 size_asymmetry_robustness = range01(size_asymmetry_robustness)
 
-
 robustness_heatmap = rbind(wing_variation,size_robustness,flight_robustness,ai_robustness, size_asymmetry_robustness) #this dataframe contains between 1000 - 1200 values for all traits.
 
+#Colomns of the heatmap should seperate two conditions for clarity. Those classifier is diet.
+#One last thing that can be added into this heatmap is corssveinless classifier.
+#classifier = as.data.frame(AI_NEX_merges_na$condition,AI_NEX_merges_na$pair)
+
+#Poin
 #Different traits have different Mean/Median values those I need to scale them to plot each trait on a scale between 0 and 1. In this case 0 is closest to either mean or median and 1 is the furthest away (least robust).
 #robustness_heatmap = scale(robustness_heatmap)
 pheatmap(robustness_heatmap, cluster_rows = FALSE,
@@ -417,11 +426,6 @@ pheatmap(robustness_heatmap, cluster_rows = FALSE,
          show_colnames = T, )
          #annotation_col=classifier)
 #Pretty good, but normalisation on replica-level should still exist.
-
-
-#Colomns of the heatmap should seperate two conditions for clarity. Those classifier is diet.
-#One last thing that can be added into this heatmap is corssveinless classifier.
-#classifier = as.data.frame(dummy_heatmap$condition,dummy_heatmap$pair)
 
 #Point for future: those robustness scores need to be normalized between different assays/replicas differently? Or perhaps a universal median/mean value could be used to describe a population under its treatment. Here I just need to be sure that certain replicas are not displayed differently in robustness just because their mean on average is lower/higher if that makes sence.
 # this normalisation would look different for different traits. In case of asymetry by default mean differences are removed by the package, thus should be good.
@@ -543,6 +547,8 @@ kruskal.test(E1 ~ Group, data = fecundity_reshaped[fecundity_reshaped$time == 2,
                                         #wing data can be named as
                                         Go_female_0523_wings_complete
                                         G0_ID_annotated_crossveinless - crossveinless file
+                                        Go_female_0523_wings_complete = Nex_wings_AV
+
 
 
 ```
