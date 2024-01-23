@@ -7,7 +7,7 @@ date: "2023-12-30"
 ```{r setup libraries, include=FALSE}
 #install.packages("onewaytests")
 #install.packages("pheatmap")
-
+#removed csaw 23.01
 library(stringr)
 library(readr)
 library(geomorph)
@@ -23,7 +23,6 @@ library(Evomorph)
 library(tidyverse)
 library(dplyr)
 library(reshape)
-library(csaw)
 library(RColorBrewer)
 ```
 
@@ -401,7 +400,7 @@ ai_robustness = abs(AI_NEX_merges_na$ai - median(AI_NEX_merges_na$ai))
 #I need to perform LRsize_difference calculation earlier to have this variable on hand.
 hist(size_asymmetry_robustness$LRsize_difference)
 #check histogram of LRsize_difference beforehand to decide weather median or mean is used.
-size_asymmetry_robustness = abs(dummy_heatmap$LRsize_difference - median(dummy_heatmap$LRsize_difference))
+size_asymmetry_robustness = abs(AI_NEX_merges_na$LRsize_difference - median(AI_NEX_merges_na$LRsize_difference))
 
 #Here should be step to scale values
 range01 <- function(x){(x-min(x))/(max(x)-min(x))}
@@ -452,20 +451,22 @@ ai_robustness = dummy_heatmap$ai - median(dummy_heatmap$ai) #This doesn't produc
 PCA <- prcomp(t(robustness_heatmap), scale = F)
 percentVar <- round(100 * PCA$sdev ^ 2/ sum(PCA$sdev ^ 2), 1)
 plotPCA.df = data.frame(PC1 = PCA$x[,1], PC2 = PCA$x[,2], PC3 = PCA$x[,3], PC4 = PCA$x[,4])
-                       # sample = paste0(colData(dds)$SampleID,"_", colData(dds)$age),  #change meta data here
-                       # condition = as.character(colData(dds)$age), batch = colData(dds)$mutation) #there is a chance to make corrections for batch or assays here
+                        sample = AI_NEX_merges_na$id,  #change meta data here
+                       condition = AI_NEX_merges_na$condition, batch = AI_NEX_merges_na$Replic) #there is a chance to make corrections for batch or assays here
 
-qplot(PC1, PC2, data = plotPCA.df, #color = as.factor(dds$Condition), main = "PC1 vs PC2 of robustness scores",
-      size = I(6))+ labs(x = paste0("PC1, VarExp:", round(percentVar[1],4)),  y = paste0("PC2, VarExp:", round(percentVar[2],4))) + scale_color_manual(values = colorRampPalette(brewer.pal(n = 5, name = "RdBu"))(4))+ theme_classic() + theme(aspect.ratio=1)
+qplot(PC1, PC2, data = plotPCA.df, color = as.factor(AI_NEX_merges_na$condition), main = "PC1 vs PC2 of robustness scores",
+      size = I(6))+ labs(x = paste0("PC1, VarExp:", round(percentVar[1],4)),  y = paste0("PC2, VarExp:", round(percentVar[2],4))) + scale_color_manual(values = colorRampPalette(brewer.pal(n = 2, name = "RdBu"))(4))+ theme_classic() + theme(aspect.ratio=1)
 
-#done, add colors:)
+
+qplot(PC1, PC2, data = plotPCA.df, color = as.factor(AI_NEX_merges_na$Replica), main = "PC1 vs PC2 of robustness scores",
+      size = I(6))+ labs(x = paste0("PC1, VarExp:", round(percentVar[1],4)),  y = paste0("PC2, VarExp:", round(percentVar[2],4))) + scale_color_manual(values = colorRampPalette(brewer.pal(n = 12, name = "RdBu"))(4))+ theme_classic() + theme(aspect.ratio=1)
+
 
 ```
 
 ```{r 10 -> Variability in egg-lay pattern, include=TRUE}
 #This is supplementary part of Go, that was completed seperately by exposing NEX to HS for 1 generation and estimating variability of fecundity in two conditions
 
-#25.12.24, Saudat Alishayeva
 #Analysis of fecundity/develpoment/egg-to-adult survival in NEX population (exposed to HS vs Control)
 
 #Input format: data include 5 egg-lays and 10 replicas. Each egg-lay lead to several collections of adults (2-3).
@@ -479,9 +480,6 @@ qplot(PC1, PC2, data = plotPCA.df, #color = as.factor(dds$Condition), main = "PC
 setwd("~/Desktop/code/fecundity_NEX/")
 fecundity <- read.delim("NEX_fecundity_expanded_E4_E6.txt")
 fecundity$ID = paste(fecundity$Group,fecundity$Vial, sep = "_")
-
-#libraries
-
 
 #plot the data, but to plot everything I need to reshape it first
 #here column time now saves information about each egg-lay in integer form, we need to convert it to a character or a factor
