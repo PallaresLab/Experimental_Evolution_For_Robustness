@@ -1,11 +1,4 @@
-Results of first generation of high-sugar exposure. The main script is under /code folder.
-
-The data folder includes objects for:
-
-- Flight analysis
-- Wing analysis
-- Integrative/correlative analysis
-
+Results of the first generation of selection experiment: control versus high-sugar exposure of NEX population.
 I am to answer 2 big questions in this analysis :
 1. How does robustness compare on different levels? 'Master' script targets this question.
     - 1.A) Do we have robust vs non-robust populations across all layers or does each trait have its own robust vs. non-robust population that doesn't overlap with the other traits? 
@@ -13,7 +6,14 @@ I am to answer 2 big questions in this analysis :
     - 1.B) Does the change in the diet contribute to changes in the robustness of certain phenotypes
 2. Does form correlate with function?
    - I address this question with various algorithms (Random Forests, Support Vec machine, and LASSO regressions) that learn how phenotypes scores (wing coords, symmetry, sizes)
-    can predict function of a fly (flight)
+    can predict the function of a fly (flight)
    - Predictions.R script targets this question.
 
-Once there is gentic data, there will be a script that maps each phenotypic score to a particular (group of ) SNPs.
+Once there is genetic data, there will be a script that maps each phenotypic score to a particular (group of ) SNPs.
+
+
+The data folder includes objects for:
+
+- Flight analysis
+- Wing analysis
+- Integrative/correlative analysis
