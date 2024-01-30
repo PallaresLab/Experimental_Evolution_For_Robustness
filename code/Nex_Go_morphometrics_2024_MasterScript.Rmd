@@ -154,7 +154,7 @@ ggbetweenstats(
 
 #4.2 - extract and plot asymetry index
 symetry_per_group = as.data.frame(bs$signed.AI, bs$condition, bs$Replica) #check if bs has replica colomns
-#symetry_per_group$Replica = bs$Replica
+symetry_per_group$Replica = bs$Replica
 symetry_per_group$CONDITION  = rownames(symetry_per_group)
 symetry_per_group$CONDITION = stringr::str_extract(symetry_per_group$CONDITION, "^.{10}")
 symetry_per_group = na.omit(symetry_per_group) # character 'ind' by default is added to condition (Geomorph shows that twis is combined data)
