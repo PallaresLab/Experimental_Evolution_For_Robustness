@@ -61,7 +61,7 @@ print(paste("Mean Squared Error (Ensemble):", mse_ensemble))
 #plot a difference betweeen predicted and actual scores 
 abs_diff <- abs(ensemble_predictions$actual_scores - predicted_scores)
 
-# Define color gradient based on absolute difference
+# Define color gradient based on absolute difference, green shows signal that is detected correctly, while red points are far from real scores
 color_gradient <- colorRampPalette(c("green", "red"))
 
 # Convert absolute differences to colors
