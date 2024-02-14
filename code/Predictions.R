@@ -58,6 +58,24 @@ final_predictions <- predict(meta_model, newdata = ensemble_predictions)
 mse_ensemble <- mean((test_data$flight_scores - final_predictions)^2)
 print(paste("Mean Squared Error (Ensemble):", mse_ensemble))
 
+#plot a difference betweeen predicted and actual scores 
+abs_diff <- abs(ensemble_predictions$actual_scores - predicted_scores)
+
+# Define color gradient based on absolute difference
+color_gradient <- colorRampPalette(c("green", "red"))
+
+# Convert absolute differences to colors
+point_colors <- color_gradient(100)[as.numeric(cut(abs_diff, breaks = 100))]
+
+# Plot predicted flight scores vs. actual flight scores with colored points
+plot(ensemble_predictions$actual_scores, predicted_scores,
+     xlab = "Actual Flight Scores", ylab = "Predicted Flight Scores",
+     main = "Predicted vs. Actual Flight Scores",
+     col = point_colors, pch = 19)
+
+# Add a diagonal line for reference (perfect prediction)
+abline(0, 1, col = "red")
+
 ##########################################################################################################################
 #Now each training method is inspected seperately
 
